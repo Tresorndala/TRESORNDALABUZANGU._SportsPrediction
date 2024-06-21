@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Jun 19 16:35:46 2024
 
-@author: user
-"""
+
 import joblib
 import streamlit as st
 import numpy as np
