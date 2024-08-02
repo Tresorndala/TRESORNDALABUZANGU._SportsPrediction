@@ -1,46 +1,41 @@
 import streamlit as st
 from transformers import MarianMTModel, MarianTokenizer
 from gtts import gTTS
-import requests
+import base64
 import os
+import requests
+from io import BytesIO
+import tarfile
 
-# Define URLs for the raw files
-model_url = 'https://github.com/username/repository/raw/branch/path/to/model/file'
-tokenizer_url = 'https://github.com/username/repository/raw/branch/path/to/tokenizer/file'
+# Define the URLs to the model and tokenizer
+model_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/blob/main/model?raw=true'
+tokenizer_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/blob/main/tokenizer?raw=true'
 
-# Local paths to save the files
-model_path = 'model.safetensors'
-tokenizer_path = 'tokenizer'
-
-# Function to download files
-def download_file(url, local_path):
-    response = requests.get(url)
-    with open(local_path, 'wb') as f:
-        f.write(response.content)
-
-# Download files if they don't exist
-if not os.path.exists(model_path):
-    download_file(model_url, model_path)
-
-if not os.path.exists(tokenizer_path):
-    download_file(tokenizer_url, tokenizer_path)
-
-# Load the model and tokenizer
+# Function to download and extract the model
 @st.cache_resource
-def load_model(model_path):
-    return MarianMTModel.from_pretrained(model_path)
+def load_model(model_url):
+    response = requests.get(model_url)
+    tar = tarfile.open(fileobj=BytesIO(response.content), mode="r:gz")
+    tar.extractall(path="./model")
+    model = MarianMTModel.from_pretrained("./model")
+    return model
 
+# Function to download and extract the tokenizer
 @st.cache_resource
-def load_tokenizer(tokenizer_path):
-    return MarianTokenizer.from_pretrained(tokenizer_path)
+def load_tokenizer(tokenizer_url):
+    response = requests.get(tokenizer_url)
+    tar = tarfile.open(fileobj=BytesIO(response.content), mode="r:gz")
+    tar.extractall(path="./tokenizer")
+    tokenizer = MarianTokenizer.from_pretrained("./tokenizer")
+    return tokenizer
 
 # Streamlit App
 st.title("MarianMT Model Translation")
 
 # Load Model and Tokenizer
-model = load_model(model_path)
-tokenizer = load_tokenizer(tokenizer_path)
-st.success("Model and Tokenizer loaded successfully.")
+model = load_model(model_url)
+tokenizer = load_tokenizer(tokenizer_url)
+st.success("Model and Tokenizer loaded successfully from GitHub.")
 
 # Translation interface
 st.subheader("Translate Tshiluba to English")
@@ -79,5 +74,6 @@ if st.button("Translate"):
             st.markdown(get_binary_file_downloader_html("translated_audio.mp3", 'Download translated audio'), unsafe_allow_html=True)
     else:
         st.warning("Please enter some Tshiluba text to translate.")
+
 
 
