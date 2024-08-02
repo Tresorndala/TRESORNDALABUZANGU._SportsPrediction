@@ -6,11 +6,11 @@ import requests
 import os
 
 # URLs for model and tokenizer files
-model_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/raw/31e51f7fcfc89a16732c914cdec789b235126557/model/model.safetensors'
-tokenizer_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/raw/31e51f7fcfc89a16732c914cdec789b235126557/tokenizer/tokenizer'  # Adjust as needed
+model_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/raw/31e51f7fcfc89a16732c914cdec789b235126557/model'
+tokenizer_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/raw/31e51f7fcfc89a16732c914cdec789b235126557/tokenizer'  # Adjust as needed
 
 # Local paths to save the files
-model_path = 'model.safetensors'
+model_path = 'model'
 tokenizer_path = 'tokenizer'
 
 # Download the model file if it doesn't exist
