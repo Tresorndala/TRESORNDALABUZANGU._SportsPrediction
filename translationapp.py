@@ -9,20 +9,32 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Define the GitHub URLs to the model and tokenizer folders
-model_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/tree/main/model'
-tokenizer_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/tree/main/tokenizer'
+# Define the paths to the local model and tokenizer directories
+model_path = "./model"
+tokenizer_path = "./tokenizer"
 
-# Function to clone a GitHub repository
-def clone_repo(url, dest):
-    os.system(f"git clone {url} {dest}")
+# Ensure the model and tokenizer folders are in place
+def download_files():
+    if not os.path.exists(model_path):
+        os.makedirs(model_path)
+        # Directly download model files
+        os.system(f"wget https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/blob/main/model/config.json -P {model_path}")
+        os.system(f"wget https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/blob/main/model/generation_config.json -P {model_path}")
+        os.system(f"wget https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/blob/main/model/model.safetensors -P {model_path}")
+
+    if not os.path.exists(tokenizer_path):
+        os.makedirs(tokenizer_path)
+        # Directly download tokenizer files
+        os.system(f"wget https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/blob/main/tokenizer/source.spm -P {tokenizer_path}")
+        os.system(f"wget https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/blob/main/tokenizer/special_tokens_map.json -P {tokenizer_path}")
+        os.system(f"wget https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/blob/main/tokenizer/target.spm -P {tokenizer_path}")
+        os.system(f"wget https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/blob/main/tokenizer/tokenizer_config.json -P {tokenizer_path}")
+        os.system(f"wget https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/blob/main/tokenizer/vocab.json -P {tokenizer_path}")
 
 # Function to load the model from local path
 @st.cache_resource
 def load_model():
-    model_path = "./model"
-    if not os.path.exists(model_path):
-        clone_repo(model_url, model_path)
+    download_files()  # Ensure files are downloaded
     try:
         model = MarianMTModel.from_pretrained(model_path)
         return model
@@ -34,9 +46,7 @@ def load_model():
 # Function to load the tokenizer from local path
 @st.cache_resource
 def load_tokenizer():
-    tokenizer_path = "./tokenizer"
-    if not os.path.exists(tokenizer_path):
-        clone_repo(tokenizer_url, tokenizer_path)
+    download_files()  # Ensure files are downloaded
     try:
         tokenizer = MarianTokenizer.from_pretrained(tokenizer_path)
         return tokenizer
@@ -52,7 +62,7 @@ st.title("MarianMT Model Translation")
 model = load_model()
 tokenizer = load_tokenizer()
 if model and tokenizer:
-    st.success("Model and Tokenizer loaded successfully from GitHub.")
+    st.success("Model and Tokenizer loaded successfully.")
 else:
     st.error("Failed to load Model and Tokenizer.")
 
@@ -72,7 +82,7 @@ if st.button("Translate"):
             # Decode the output
             translated_text = tokenizer.decode(translated[0], skip_special_tokens=True)
             st.success(f"Translated text: {translated_text}")
-            
+
             # Convert translated text to speech
             tts = gTTS(translated_text)
             tts.save("translated_audio.mp3")
@@ -93,9 +103,6 @@ if st.button("Translate"):
             st.markdown(get_binary_file_downloader_html("translated_audio.mp3", 'Download translated audio'), unsafe_allow_html=True)
     else:
         st.warning("Please enter some Tshiluba text to translate.")
-
-
-
 
 
 
