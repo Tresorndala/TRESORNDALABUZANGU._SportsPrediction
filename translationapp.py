@@ -1,26 +1,26 @@
 import streamlit as st
-from transformers import MarianTokenizer
-from transformers import AutoModelForSeq2SeqLM
+from transformers import MarianTokenizer, AutoModelForSeq2SeqLM
 from gtts import gTTS
 import base64
 import os
 import subprocess
 
-# Clone the GitHub repository
+# Clone the GitHub repository if it does not exist
 repo_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction.git'
 repo_dir = 'TRESORNDALABUZANGU._SportsPrediction'
+
 if not os.path.exists(repo_dir):
     subprocess.run(['git', 'clone', repo_url])
 
 # Define the paths to the model and tokenizer
-model_path = os.path.join(repo_dir, 'model', 'model.safetensors')
+model_path = os.path.join(repo_dir, 'model')
 tokenizer_path = os.path.join(repo_dir, 'tokenizer')
 
 # Load the model and tokenizer
 @st.cache_resource
 def load_model(model_path):
-    # Load the model with a custom loading method for safetensors
-    model = AutoModelForSeq2SeqLM.from_pretrained(model_path, from_tf=False)
+    # Load the model; adjust as needed for model format
+    model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
     return model
 
 @st.cache_resource
