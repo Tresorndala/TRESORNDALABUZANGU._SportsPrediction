@@ -7,11 +7,11 @@ import os
 
 # URLs for model and tokenizer files
 model_url = 'https://example.com/path/to/model/model.safetensors'
-tokenizer_url = 'https://example.com/path/to/tokenizer/tokenizer.zip'  # Adjust as needed
+tokenizer_url = 'https://example.com/path/to/tokenizer/tokenizer'  # Adjust as needed
 
 # Local paths to save the files
 model_path = 'model.safetensors'
-tokenizer_path = 'tokenizer.zip'
+tokenizer_path = 'tokenizer'
 
 # Download the model file if it doesn't exist
 if not os.path.exists(model_path):
@@ -19,17 +19,11 @@ if not os.path.exists(model_path):
     with open(model_path, 'wb') as f:
         f.write(response.content)
 
-# Download and extract the tokenizer files if they don't exist
+# Download the tokenizer file if it doesn't exist
 if not os.path.exists(tokenizer_path):
     response = requests.get(tokenizer_url)
     with open(tokenizer_path, 'wb') as f:
         f.write(response.content)
-
-# Assuming tokenizer_path is a zip file, unzip it
-import zipfile
-
-with zipfile.ZipFile(tokenizer_path, 'r') as zip_ref:
-    zip_ref.extractall('tokenizer')
 
 # Load the model and tokenizer
 @st.cache_resource
@@ -55,7 +49,7 @@ st.title("MarianMT Model Translation")
 
 # Load Model and Tokenizer
 model = load_model(model_path)
-tokenizer = load_tokenizer('tokenizer')
+tokenizer = load_tokenizer(tokenizer_path)
 if model and tokenizer:
     st.success("Model and Tokenizer loaded successfully.")
 
@@ -98,3 +92,4 @@ if model and tokenizer:
             st.warning("Please enter some Tshiluba text to translate.")
 else:
     st.error("Failed to load model or tokenizer.")
+
