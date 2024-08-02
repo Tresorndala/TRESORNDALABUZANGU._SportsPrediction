@@ -11,19 +11,15 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Define URLs for the model and tokenizer files
-model_files = {
-    'config.json': 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/raw/main/model/config.json',
-    'generation_config.json': 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/raw/main/model/generation_config.json',
-    'model.safetensors': 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/raw/main/model/model.safetensors'
-}
+model_config_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/blob/main/model/config.json?raw=true'
+model_generation_config_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/blob/main/model/generation_config.json?raw=true'
+model_safetensors_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/blob/main/model/model.safetensors?raw=true'
 
-tokenizer_files = {
-    'source.spm': 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/raw/main/tokenizer/source.spm',
-    'special_tokens_map.json': 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/raw/main/tokenizer/special_tokens_map.json',
-    'target.spm': 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/raw/main/tokenizer/target.spm',
-    'tokenizer_config.json': 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/raw/main/tokenizer/tokenizer_config.json',
-    'vocab.json': 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/raw/main/tokenizer/vocab.json'
-}
+tokenizer_source_spm_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/blob/main/tokenizer/source.spm?raw=true'
+tokenizer_special_tokens_map_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/blob/main/tokenizer/special_tokens_map.json?raw=true'
+tokenizer_target_spm_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/blob/main/tokenizer/target.spm?raw=true'
+tokenizer_config_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/blob/main/tokenizer/tokenizer_config.json?raw=true'
+tokenizer_vocab_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/blob/main/tokenizer/vocab.json?raw=true'
 
 # Function to download a file from a URL
 def download_file(url, path):
@@ -44,11 +40,17 @@ def download_files():
     if not os.path.exists('./tokenizer'):
         os.makedirs('./tokenizer')
 
-    for file_name, url in model_files.items():
-        download_file(url, f'./model/{file_name}')
+    # Download model files
+    download_file(model_config_url, './model/config.json')
+    download_file(model_generation_config_url, './model/generation_config.json')
+    download_file(model_safetensors_url, './model/model.safetensors')
 
-    for file_name, url in tokenizer_files.items():
-        download_file(url, f'./tokenizer/{file_name}')
+    # Download tokenizer files
+    download_file(tokenizer_source_spm_url, './tokenizer/source.spm')
+    download_file(tokenizer_special_tokens_map_url, './tokenizer/special_tokens_map.json')
+    download_file(tokenizer_target_spm_url, './tokenizer/target.spm')
+    download_file(tokenizer_config_url, './tokenizer/tokenizer_config.json')
+    download_file(tokenizer_vocab_url, './tokenizer/vocab.json')
 
 # Function to load the model from local path
 @st.cache_resource
@@ -122,6 +124,7 @@ if st.button("Translate"):
             st.markdown(get_binary_file_downloader_html("translated_audio.mp3", 'Download translated audio'), unsafe_allow_html=True)
     else:
         st.warning("Please enter some Tshiluba text to translate.")
+
 
 
 
