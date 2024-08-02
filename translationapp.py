@@ -1,76 +1,75 @@
-# -*- coding: utf-8 -*-
-"""
-Spyder Editor
-
-This is a temporary script file.
-"""
-import pickle
-import pandas as pd
-import joblib
-from scipy.sparse import csr_matrix
-from sklearn.preprocessing import StandardScaler
 import streamlit as st
+from transformers import MarianMTModel, MarianTokenizer
+from gtts import gTTS
+import base64
+import os
+import subprocess
 
-# Load the saved model and scaler
-model_path = 'C:\\Users\\user\\Documents\\streamlitdeploy\\GradientBoosting.pkl'
-scaler_path = 'path_to_your_scaler/scaler.pkl'
+# Clone the GitHub repository
+repo_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction.git'
+repo_dir = 'TRESORNDALABUZANGU._SportsPrediction'
+if not os.path.exists(repo_dir):
+    subprocess.run(['git', 'clone', repo_url])
 
-model = joblib.load(model_path)
-scaler = joblib.load(scaler_path)
+# Define the paths to the model and tokenizer
+model_path = os.path.join(repo_dir, 'model')
+tokenizer_path = os.path.join(repo_dir, 'tokenizer')
 
-# Function to preprocess input data
-def preprocess_input(preferred_foot, potential, age, shooting, passing, physic, movement_reactions):
-    # One-hot encode the 'preferred_foot' field
-    preferred_foot_left = 1 if preferred_foot == 'left' else 0
-    preferred_foot_right = 1 if preferred_foot == 'right' else 0
-    
-    # Create a DataFrame
-    input_data = {
-        'potential': [potential],
-        'age': [age],
-        'shooting': [shooting],
-        'passing': [passing],
-        'physic': [physic],
-        'movement_reactions': [movement_reactions],
-        'preferred_foot_left': [preferred_foot_left],
-        'preferred_foot_right': [preferred_foot_right]
-    }
-    
-    df = pd.DataFrame(input_data)
-    
-    # Convert to sparse matrix
-    sparse_matrix = csr_matrix(df.astype(pd.SparseDtype("float", 0)).sparse.to_coo())
-    
-    # Standardize features using the same scaler used during training
-    X_scaled = scaler.transform(sparse_matrix)
-    
-    return X_scaled
+# Load the model and tokenizer
+@st.cache_resource
+def load_model(model_path):
+    model = MarianMTModel.from_pretrained(model_path)
+    return model
 
-# Function to handle prediction and display result
-def predict_rating(preferred_foot, potential, age, shooting, passing, physic, movement_reactions):
-    X_input = preprocess_input(preferred_foot, potential, age, shooting, passing, physic, movement_reactions)
-    prediction = model.predict(X_input)[0]
-    return prediction
+@st.cache_resource
+def load_tokenizer(tokenizer_path):
+    tokenizer = MarianTokenizer.from_pretrained(tokenizer_path)
+    return tokenizer
 
-# Streamlit application
-def main():
-    st.title('Football Player Overall Rating Predictor')
-    st.markdown('Enter the details of the football player to predict the overall rating.')
+# Streamlit App
+st.title("MarianMT Model Translation")
 
-    # Input fields
-    preferred_foot = st.selectbox('Preferred Foot', ['left', 'right'])
-    potential = st.slider('Potential', min_value=50, max_value=100, value=80)
-    age = st.slider('Age', min_value=16, max_value=40, value=25)
-    shooting = st.slider('Shooting', min_value=50, max_value=100, value=70)
-    passing = st.slider('Passing', min_value=50, max_value=100, value=70)
-    physic = st.slider('Physic', min_value=50, max_value=100, value=70)
-    movement_reactions = st.slider('Movement Reactions', min_value=50, max_value=100, value=70)
+# Load Model and Tokenizer
+model = load_model(model_path)
+tokenizer = load_tokenizer(tokenizer_path)
+st.success("Model and Tokenizer loaded successfully from GitHub repository.")
 
-    # Predict button
-    if st.button('Predict'):
-        prediction = predict_rating(preferred_foot, potential, age, shooting, passing, physic, movement_reactions)
-        st.success(f'Predicted Overall Rating: {prediction:.2f}')
+# Translation interface
+st.subheader("Translate Tshiluba to English")
 
-if __name__ == '__main__':
-    main()
+tshiluba_text = st.text_area("Enter Tshiluba text to translate")
+if st.button("Translate"):
+    if tshiluba_text:
+        with st.spinner("Translating..."):
+            # Tokenize input
+            inputs = tokenizer(tshiluba_text, return_tensors="pt", truncation=True, padding="max_length", max_length=128)
+
+            # Generate translation
+            translated = model.generate(**inputs)
+
+            # Decode the output
+            translated_text = tokenizer.decode(translated[0], skip_special_tokens=True)
+            st.success(f"Translated text: {translated_text}")
+            
+            # Convert translated text to speech
+            tts = gTTS(translated_text)
+            tts.save("translated_audio.mp3")
+
+            # Display audio player
+            audio_file = open("translated_audio.mp3", "rb")
+            audio_bytes = audio_file.read()
+            st.audio(audio_bytes, format="audio/mp3")
+
+            # Optionally provide a download link
+            def get_binary_file_downloader_html(bin_file, file_label='File'):
+                with open(bin_file, 'rb') as f:
+                    data = f.read()
+                bin_str = base64.b64encode(data).decode()
+                href = f'<a href="data:application/octet-stream;base64,{bin_str}" download="{os.path.basename(bin_file)}">{file_label}</a>'
+                return href
+
+            st.markdown(get_binary_file_downloader_html("translated_audio.mp3", 'Download translated audio'), unsafe_allow_html=True)
+    else:
+        st.warning("Please enter some Tshiluba text to translate.")
+
 
