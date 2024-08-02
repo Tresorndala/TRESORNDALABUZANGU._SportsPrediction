@@ -1,29 +1,27 @@
 import streamlit as st
+import git
+import os
 from transformers import MarianTokenizer, AutoModelForSeq2SeqLM
 from gtts import gTTS
 import base64
-import requests
-import os
 
-# URLs for model and tokenizer files
-model_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/raw/31e51f7fcfc89a16732c914cdec789b235126557/model'
-tokenizer_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/raw/31e51f7fcfc89a16732c914cdec789b235126557/tokenizer'  # Adjust as needed
+# Define the repository URL and local path
+repo_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction.git'
+local_repo_path = 'tresorndala_repo'
 
-# Local paths to save the files
-model_path = 'model'
-tokenizer_path = 'tokenizer'
+# Clone the repository if it does not exist
+if not os.path.exists(local_repo_path):
+    st.write("Cloning repository...")
+    try:
+        git.Repo.clone_from(repo_url, local_repo_path)
+        st.success("Repository cloned successfully.")
+    except Exception as e:
+        st.error(f"Error cloning repository: {e}")
+        st.stop()
 
-# Download the model file if it doesn't exist
-if not os.path.exists(model_path):
-    response = requests.get(model_url)
-    with open(model_path, 'wb') as f:
-        f.write(response.content)
-
-# Download the tokenizer file if it doesn't exist
-if not os.path.exists(tokenizer_path):
-    response = requests.get(tokenizer_url)
-    with open(tokenizer_path, 'wb') as f:
-        f.write(response.content)
+# Define paths for model and tokenizer
+model_path = os.path.join(local_repo_path, 'model')
+tokenizer_path = os.path.join(local_repo_path, 'tokenizer')
 
 # Load the model and tokenizer
 @st.cache_resource
