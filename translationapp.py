@@ -2,47 +2,45 @@ import streamlit as st
 from transformers import MarianMTModel, MarianTokenizer
 from gtts import gTTS
 import base64
-import requests
-from io import BytesIO
+import os
+import subprocess
 
-# Define the URLs to the model and tokenizer
-model_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/raw/main/model/model.bin'
-tokenizer_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/raw/main/tokenizer/tokenizer.json'
+# GitHub repository details
+repo_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction.git'
+repo_dir = 'TRESORNDALABUZANGU._SportsPrediction'
+model_path = os.path.join(repo_dir, 'model')
+tokenizer_path = os.path.join(repo_dir, 'tokenizer')
 
-# Function to download a file from a URL
-def download_file(url):
-    response = requests.get(url)
-    if response.status_code == 200:
-        return BytesIO(response.content)
-    else:
-        st.error(f'Failed to download {url}.')
-        return None
+# Function to clone the GitHub repository
+@st.cache_resource
+def clone_repo():
+    if not os.path.exists(repo_dir):
+        subprocess.run(['git', 'clone', repo_url])
+    return True
 
 # Load the model and tokenizer
 @st.cache_resource
-def load_model(model_url):
-    model_file = download_file(model_url)
-    if model_file:
-        model = MarianMTModel.from_pretrained(model_file)
-        return model
-    return None
+def load_model(model_path):
+    model = MarianMTModel.from_pretrained(model_path)
+    return model
 
 @st.cache_resource
-def load_tokenizer(tokenizer_url):
-    tokenizer_file = download_file(tokenizer_url)
-    if tokenizer_file:
-        tokenizer = MarianTokenizer.from_pretrained(tokenizer_file)
-        return tokenizer
-    return None
+def load_tokenizer(tokenizer_path):
+    tokenizer = MarianTokenizer.from_pretrained(tokenizer_path)
+    return tokenizer
+
+# Clone the repository
+if clone_repo():
+    st.success("Repository cloned successfully.")
 
 # Streamlit App
 st.title("MarianMT Model Translation")
 
 # Load Model and Tokenizer
-model = load_model(model_url)
-tokenizer = load_tokenizer(tokenizer_url)
+model = load_model(model_path)
+tokenizer = load_tokenizer(tokenizer_path)
 if model and tokenizer:
-    st.success("Model and Tokenizer loaded successfully from GitHub.")
+    st.success("Model and Tokenizer loaded successfully from the cloned repository.")
 else:
     st.error("Failed to load Model and Tokenizer.")
 
