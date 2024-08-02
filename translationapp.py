@@ -1,34 +1,29 @@
 import streamlit as st
-import requests
-import zipfile
-import io
-import os
 from transformers import MarianTokenizer, AutoModelForSeq2SeqLM
 from gtts import gTTS
 import base64
+import requests
+import os
 
-# URLs for model and tokenizer ZIP files
-model_zip_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/archive/refs/heads/31e51f7fcfc89a16732c914cdec789b235126557.zip'
-tokenizer_zip_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/archive/refs/heads/31e51f7fcfc89a16732c914cdec789b235126557.zip'
+# URLs for model and tokenizer files
+model_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/raw/31e51f7fcfc89a16732c914cdec789b235126557/model/model.safetensors'
+tokenizer_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/raw/31e51f7fcfc89a16732c914cdec789b235126557/tokenizer/tokenizer'  # Adjust as needed
 
 # Local paths to save the files
-model_zip_path = 'model.zip'
-model_extract_path = 'model'
-tokenizer_zip_path = 'tokenizer.zip'
-tokenizer_extract_path = 'tokenizer'
+model_path = 'model.safetensors'
+tokenizer_path = 'tokenizer'
 
-# Function to download and extract ZIP files
-def download_and_extract(zip_url, extract_to):
-    if not os.path.exists(extract_to):
-        response = requests.get(zip_url)
-        with zipfile.ZipFile(io.BytesIO(response.content)) as zip_ref:
-            zip_ref.extractall(extract_to)
+# Download the model file if it doesn't exist
+if not os.path.exists(model_path):
+    response = requests.get(model_url)
+    with open(model_path, 'wb') as f:
+        f.write(response.content)
 
-# Download and extract model
-download_and_extract(model_zip_url, model_extract_path)
-
-# Download and extract tokenizer
-download_and_extract(tokenizer_zip_url, tokenizer_extract_path)
+# Download the tokenizer file if it doesn't exist
+if not os.path.exists(tokenizer_path):
+    response = requests.get(tokenizer_url)
+    with open(tokenizer_path, 'wb') as f:
+        f.write(response.content)
 
 # Load the model and tokenizer
 @st.cache_resource
@@ -53,8 +48,8 @@ def load_tokenizer(tokenizer_path):
 st.title("MarianMT Model Translation")
 
 # Load Model and Tokenizer
-model = load_model(model_extract_path)
-tokenizer = load_tokenizer(tokenizer_extract_path)
+model = load_model(model_path)
+tokenizer = load_tokenizer(tokenizer_path)
 if model and tokenizer:
     st.success("Model and Tokenizer loaded successfully.")
 
@@ -97,4 +92,5 @@ if model and tokenizer:
             st.warning("Please enter some Tshiluba text to translate.")
 else:
     st.error("Failed to load model or tokenizer.")
+
 
