@@ -1,5 +1,6 @@
 import streamlit as st
-from transformers import MarianMTModel, MarianTokenizer
+from transformers import MarianTokenizer
+from transformers import AutoModelForSeq2SeqLM
 from gtts import gTTS
 import base64
 import os
@@ -12,13 +13,14 @@ if not os.path.exists(repo_dir):
     subprocess.run(['git', 'clone', repo_url])
 
 # Define the paths to the model and tokenizer
-model_path = os.path.join(repo_dir, 'model')
+model_path = os.path.join(repo_dir, 'model', 'model.safetensors')
 tokenizer_path = os.path.join(repo_dir, 'tokenizer')
 
 # Load the model and tokenizer
 @st.cache_resource
 def load_model(model_path):
-    model = MarianMTModel.from_pretrained(model_path)
+    # Load the model with a custom loading method for safetensors
+    model = AutoModelForSeq2SeqLM.from_pretrained(model_path, from_tf=False)
     return model
 
 @st.cache_resource
@@ -71,6 +73,3 @@ if st.button("Translate"):
             st.markdown(get_binary_file_downloader_html("translated_audio.mp3", 'Download translated audio'), unsafe_allow_html=True)
     else:
         st.warning("Please enter some Tshiluba text to translate.")
-
-
-
