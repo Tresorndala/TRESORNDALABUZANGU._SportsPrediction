@@ -3,6 +3,7 @@ from transformers import MarianMTModel, MarianTokenizer
 from gtts import gTTS
 import base64
 import os
+import requests
 import logging
 
 # Configure logging
@@ -13,23 +14,46 @@ logger = logging.getLogger(__name__)
 model_path = "./model"
 tokenizer_path = "./tokenizer"
 
-# Ensure the model and tokenizer folders are in place
+# URLs to download model and tokenizer files
+model_urls = [
+    'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/raw/main/model/config.json',
+    'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/raw/main/model/generation_config.json',
+    'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/raw/main/model/model.safetensors'
+]
+
+tokenizer_urls = [
+    'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/raw/main/tokenizer/source.spm',
+    'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/raw/main/tokenizer/special_tokens_map.json',
+    'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/raw/main/tokenizer/target.spm',
+    'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/raw/main/tokenizer/tokenizer_config.json',
+    'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/raw/main/tokenizer/vocab.json'
+]
+
+# Function to download files from URLs
+def download_file(url, path):
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        with open(path, 'wb') as f:
+            f.write(response.content)
+    except Exception as e:
+        logger.error(f"Failed to download {url}: {e}")
+        st.error(f"Failed to download file: {e}")
+
+# Function to ensure model and tokenizer files are downloaded
 def download_files():
     if not os.path.exists(model_path):
         os.makedirs(model_path)
-        # Directly download model files
-        os.system(f"wget https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/blob/main/model/config.json -P {model_path}")
-        os.system(f"wget https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/blob/main/model/generation_config.json -P {model_path}")
-        os.system(f"wget https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/blob/main/model/model.safetensors -P {model_path}")
-
     if not os.path.exists(tokenizer_path):
         os.makedirs(tokenizer_path)
-        # Directly download tokenizer files
-        os.system(f"wget https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/blob/main/tokenizer/source.spm -P {tokenizer_path}")
-        os.system(f"wget https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/blob/main/tokenizer/special_tokens_map.json -P {tokenizer_path}")
-        os.system(f"wget https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/blob/main/tokenizer/target.spm -P {tokenizer_path}")
-        os.system(f"wget https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/blob/main/tokenizer/tokenizer_config.json -P {tokenizer_path}")
-        os.system(f"wget https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/blob/main/tokenizer/vocab.json -P {tokenizer_path}")
+
+    for url in model_urls:
+        file_name = os.path.basename(url)
+        download_file(url, os.path.join(model_path, file_name))
+
+    for url in tokenizer_urls:
+        file_name = os.path.basename(url)
+        download_file(url, os.path.join(tokenizer_path, file_name))
 
 # Function to load the model from local path
 @st.cache_resource
