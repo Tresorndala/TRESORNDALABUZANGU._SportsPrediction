@@ -1,37 +1,38 @@
 import streamlit as st
 from transformers import MarianMTModel, MarianTokenizer
 from gtts import gTTS
-import base64
+import requests
 import os
-import subprocess
 
-# GitHub repository details
-repo_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction.git'
-repo_dir = 'TRESORNDALABUZANGU._SportsPrediction'
-model_path = os.path.join(repo_dir, 'model')
-tokenizer_path = os.path.join(repo_dir, 'tokenizer')
+# Define URLs for the raw files
+model_url = 'https://github.com/username/repository/raw/branch/path/to/model/file'
+tokenizer_url = 'https://github.com/username/repository/raw/branch/path/to/tokenizer/file'
 
-# Function to clone the GitHub repository
-@st.cache_resource
-def clone_repo():
-    if not os.path.exists(repo_dir):
-        subprocess.run(['git', 'clone', repo_url])
-    return True
+# Local paths to save the files
+model_path = 'model.safetensors'
+tokenizer_path = 'tokenizer'
+
+# Function to download files
+def download_file(url, local_path):
+    response = requests.get(url)
+    with open(local_path, 'wb') as f:
+        f.write(response.content)
+
+# Download files if they don't exist
+if not os.path.exists(model_path):
+    download_file(model_url, model_path)
+
+if not os.path.exists(tokenizer_path):
+    download_file(tokenizer_url, tokenizer_path)
 
 # Load the model and tokenizer
 @st.cache_resource
 def load_model(model_path):
-    model = MarianMTModel.from_pretrained(model_path)
-    return model
+    return MarianMTModel.from_pretrained(model_path)
 
 @st.cache_resource
 def load_tokenizer(tokenizer_path):
-    tokenizer = MarianTokenizer.from_pretrained(tokenizer_path)
-    return tokenizer
-
-# Clone the repository
-if clone_repo():
-    st.success("Repository cloned successfully.")
+    return MarianTokenizer.from_pretrained(tokenizer_path)
 
 # Streamlit App
 st.title("MarianMT Model Translation")
@@ -39,10 +40,7 @@ st.title("MarianMT Model Translation")
 # Load Model and Tokenizer
 model = load_model(model_path)
 tokenizer = load_tokenizer(tokenizer_path)
-if model and tokenizer:
-    st.success("Model and Tokenizer loaded successfully from the cloned repository.")
-else:
-    st.error("Failed to load Model and Tokenizer.")
+st.success("Model and Tokenizer loaded successfully.")
 
 # Translation interface
 st.subheader("Translate Tshiluba to English")
@@ -81,4 +79,5 @@ if st.button("Translate"):
             st.markdown(get_binary_file_downloader_html("translated_audio.mp3", 'Download translated audio'), unsafe_allow_html=True)
     else:
         st.warning("Please enter some Tshiluba text to translate.")
+
 
