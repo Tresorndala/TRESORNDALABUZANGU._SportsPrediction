@@ -1,127 +1,99 @@
 import streamlit as st
-from transformers import MarianMTModel, MarianTokenizer
-from gtts import gTTS
-import base64
-import os
+import pandas as pd
+import numpy as np
+import joblib
 import requests
-import logging
+from sklearn.ensemble import GradientBoostingRegressor
+from io import BytesIO
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# URLs of your .pkl files on GitHub
+model_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/blob/main/GradientBoosting.pkl?raw=true'
+scaler_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/blob/main/scaler.pkl?raw=true'
 
-# Define URLs for the model and tokenizer files
-model_config_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/blob/main/model/config.json?raw=true'
-model_generation_config_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/blob/main/model/generation_config.json?raw=true'
-model_safetensors_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/blob/main/model/model.safetensors?raw=true'
-
-tokenizer_source_spm_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/blob/main/tokenizer/source.spm?raw=true'
-tokenizer_special_tokens_map_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/blob/main/tokenizer/special_tokens_map.json?raw=true'
-tokenizer_target_spm_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/blob/main/tokenizer/target.spm?raw=true'
-tokenizer_config_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/blob/main/tokenizer/tokenizer_config.json?raw=true'
-tokenizer_vocab_url = 'https://github.com/Tresorndala/TRESORNDALABUZANGU._SportsPrediction/blob/main/tokenizer/vocab.json?raw=true'
-
-# Function to download a file from a URL
-def download_file(url, path):
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
-        with open(path, 'wb') as f:
-            f.write(response.content)
-        logger.info(f"Downloaded {path}")
-    except Exception as e:
-        logger.error(f"Failed to download {url}: {e}")
-        st.error(f"Failed to download file: {e}")
-
-# Function to ensure model and tokenizer files are downloaded
-def download_files():
-    if not os.path.exists('./model'):
-        os.makedirs('./model')
-    if not os.path.exists('./tokenizer'):
-        os.makedirs('./tokenizer')
-
-    # Download model files
-    download_file(model_config_url, './model/config.json')
-    download_file(model_generation_config_url, './model/generation_config.json')
-    download_file(model_safetensors_url, './model/model.safetensors')
-
-    # Download tokenizer files
-    download_file(tokenizer_source_spm_url, './tokenizer/source.spm')
-    download_file(tokenizer_special_tokens_map_url, './tokenizer/special_tokens_map.json')
-    download_file(tokenizer_target_spm_url, './tokenizer/target.spm')
-    download_file(tokenizer_config_url, './tokenizer/tokenizer_config.json')
-    download_file(tokenizer_vocab_url, './tokenizer/vocab.json')
-
-# Function to load the model from local path
+# Function to download the model
 @st.cache_resource
-def load_model():
-    download_files()  # Ensure files are downloaded
-    try:
-        model = MarianMTModel.from_pretrained('./model')
-        return model
-    except Exception as e:
-        logger.error(f"Failed to load model: {e}")
-        st.error("Failed to load the model. Please check the logs for more details.")
-        return None
+def download_model(url):
+    response = requests.get(url)
+    response.raise_for_status()  # Check if the download was successful
+    model = joblib.load(BytesIO(response.content))
+    return model
 
-# Function to load the tokenizer from local path
+# Function to download the scaler
 @st.cache_resource
-def load_tokenizer():
-    download_files()  # Ensure files are downloaded
-    try:
-        tokenizer = MarianTokenizer.from_pretrained('./tokenizer')
-        return tokenizer
-    except Exception as e:
-        logger.error(f"Failed to load tokenizer: {e}")
-        st.error("Failed to load the tokenizer. Please check the logs for more details.")
-        return None
+def download_scaler(url):
+    response = requests.get(url)
+    response.raise_for_status()  # Check if the download was successful
+    scaler = joblib.load(BytesIO(response.content))
+    return scaler
 
-# Streamlit App
-st.title("MarianMT Model Translation")
+# Function to preprocess input data
+def preprocess_input(preferred_foot, potential, age, shooting, passing, physic, movement_reactions, scaler):
+    # Convert preferred_foot to binary (assuming 'Left' is 1 and 'Right' is 0)
+    preferred_foot_binary = 1 if preferred_foot.lower() == 'left' else 0
 
-# Load Model and Tokenizer
-model = load_model()
-tokenizer = load_tokenizer()
-if model and tokenizer:
-    st.success("Model and Tokenizer loaded successfully.")
-else:
-    st.error("Failed to load Model and Tokenizer.")
+    # Prepare input as numpy array
+    input_data = np.array([potential, age, shooting, passing, physic, movement_reactions, preferred_foot_binary]).reshape(1, -1)
 
-# Translation interface
-st.subheader("Translate Tshiluba to English")
+    # Scale the input data
+    input_data_scaled = scaler.transform(input_data)
 
-tshiluba_text = st.text_area("Enter Tshiluba text to translate")
-if st.button("Translate"):
-    if tshiluba_text and model and tokenizer:
-        with st.spinner("Translating..."):
-            # Tokenize input
-            inputs = tokenizer(tshiluba_text, return_tensors="pt", truncation=True, padding="max_length", max_length=128)
+    return input_data_scaled
 
-            # Generate translation
-            translated = model.generate(**inputs)
+# Function to handle prediction and display result
+def predict_rating(model, scaler, preferred_foot, potential, age, shooting, passing, physic, movement_reactions):
+    input_data = preprocess_input(preferred_foot, potential, age, shooting, passing, physic, movement_reactions, scaler)
+    st.write(f"Preprocessed and scaled input data shape: {input_data.shape}, data: {input_data}")
 
-            # Decode the output
-            translated_text = tokenizer.decode(translated[0], skip_special_tokens=True)
-            st.success(f"Translated text: {translated_text}")
+    # Access the actual model if it is a pipeline
+    if hasattr(model, 'named_steps'):
+        model = model.named_steps['regressor']
 
-            # Convert translated text to speech
-            tts = gTTS(translated_text)
-            tts.save("translated_audio.mp3")
+    # Prediction
+    prediction = model.predict(input_data)[0]
 
-            # Display audio player
-            audio_file = open("translated_audio.mp3", "rb")
-            audio_bytes = audio_file.read()
-            st.audio(audio_bytes, format="audio/mp3")
-
-            # Optionally provide a download link
-            def get_binary_file_downloader_html(bin_file, file_label='File'):
-                with open(bin_file, 'rb') as f:
-                    data = f.read()
-                bin_str = base64.b64encode(data).decode()
-                href = f'<a href="data:application/octet-stream;base64,{bin_str}" download="{os.path.basename(bin_file)}">{file_label}</a>'
-                return href
-
-            st.markdown(get_binary_file_downloader_html("translated_audio.mp3", 'Download translated audio'), unsafe_allow_html=True)
+    # Confidence estimation for GradientBoostingRegressor
+    if isinstance(model, GradientBoostingRegressor):
+        if hasattr(model, 'estimators_'):
+            stage_predictions = np.array([sum(est.predict(input_data) for est in stage) for stage in model.estimators_]) / len(model.estimators_)
+            confidence = np.std(stage_predictions)
+        else:
+            confidence = 0.0  # Default value if confidence cannot be calculated
     else:
-        st.warning("Please enter some Tshiluba text to translate.")
+        confidence = 0.0  # Default value if confidence cannot be calculated
+
+    return prediction, confidence
+
+# Streamlit application
+def main():
+    st.title('Football Player Overall Rating Predictor')
+    st.markdown('Enter the details of the football player to predict the overall rating.')
+
+    # Load the model and scaler
+    try:
+        model = download_model(model_url)
+        scaler = download_scaler(scaler_url)
+    except Exception as e:
+        st.error(f"Error loading model or scaler: {e}")
+        return
+
+    # Input fields
+    preferred_foot = st.selectbox('Preferred Foot', ['Left', 'Right'])
+    potential = st.slider('Potential', min_value=50, max_value=100, value=80)
+    age = st.slider('Age', min_value=16, max_value=40, value=25)
+    shooting = st.slider('Shooting', min_value=50, max_value=100, value=70)
+    passing = st.slider('Passing', min_value=50, max_value=100, value=70)
+    physic = st.slider('Physic', min_value=50, max_value=100, value=70)
+    movement_reactions = st.slider('Movement Reactions', min_value=50, max_value=100, value=70)
+
+    # Predict button
+    if st.button('Predict'):
+        try:
+            prediction, confidence = predict_rating(model, scaler, preferred_foot, potential, age, shooting, passing, physic, movement_reactions)
+            st.success(f'Predicted Overall Rating: {prediction:.2f}')
+            st.info(f'Confidence of Prediction: ±{confidence:.2f}')
+        except Exception as e:
+            st.error(f'Error predicting: {e}')
+
+if __name__ == '__main__':
+    main()
 
